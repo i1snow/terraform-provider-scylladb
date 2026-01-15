@@ -28,6 +28,7 @@ type roleDataSource struct {
 
 // roleDataSourceModel maps the data source schema data.
 type roleDataSourceModel struct {
+	ID          types.String   `tfsdk:"id"`
 	Role        types.String   `tfsdk:"role"`
 	CanLogin    types.Bool     `tfsdk:"can_login"`
 	IsSuperuser types.Bool     `tfsdk:"is_superuser"`
@@ -43,6 +44,10 @@ func (d *roleDataSource) Metadata(_ context.Context, req datasource.MetadataRequ
 func (d *roleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "The name of the role to look up.",
+				Required:    true,
+			},
 			"role": schema.StringAttribute{
 				Computed: true,
 			},
@@ -62,9 +67,15 @@ func (d *roleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 
 // Read refreshes the Terraform state with the latest data.
 func (d *roleDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var state roleDataSourceModel
+	var config roleDataSourceModel
 
-	curRole, err := d.client.GetRole("cassandra")
+	// Read config.
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	curRole, err := d.client.GetRole(config.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read the role",
@@ -73,8 +84,9 @@ func (d *roleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	// Map response body to model
-	state = roleDataSourceModel{
+	// Map response body to model.
+	state := roleDataSourceModel{
+		ID:          config.ID,
 		Role:        types.StringValue(curRole.Role),
 		CanLogin:    types.BoolValue(curRole.CanLogin),
 		IsSuperuser: types.BoolValue(curRole.IsSuperuser),
@@ -83,9 +95,8 @@ func (d *roleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		state.MemberOf = append(state.MemberOf, types.StringValue(member))
 	}
 
-	// Set state
-	diags := resp.State.Set(ctx, &state)
-	resp.Diagnostics.Append(diags...)
+	// Set state.
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

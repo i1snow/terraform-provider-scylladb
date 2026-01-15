@@ -37,12 +37,14 @@ type scylladbProvider struct {
 
 // scylladbProviderModel describes the provider data model.
 type scylladbProviderModel struct {
-	Host              types.String `tfsdk:"host"`
-	Port              types.Int64  `tfsdk:"port"`
-	AuthLoginUserPass struct {
-		Username types.String `tfsdk:"username"`
-		Password types.String `tfsdk:"password"`
-	} `tfsdk:"auth_login_userpass"`
+	Host              types.String            `tfsdk:"host"`
+	Port              types.Int64             `tfsdk:"port"`
+	AuthLoginUserPass *authLoginUserPassModel `tfsdk:"auth_login_userpass"`
+}
+
+type authLoginUserPassModel struct {
+	Username types.String `tfsdk:"username"`
+	Password types.String `tfsdk:"password"`
 }
 
 func (p *scylladbProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -69,11 +71,11 @@ func (p *scylladbProvider) Schema(ctx context.Context, req provider.SchemaReques
 				Attributes: map[string]schema.Attribute{
 					"username": schema.StringAttribute{
 						Description: "Login with username",
-						Required:    false,
+						Required:    true,
 					},
 					"password": schema.StringAttribute{
 						Description: "Login with password",
-						Required:    false,
+						Required:    true,
 						Sensitive:   true,
 					},
 				},
@@ -100,29 +102,11 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 	if data.Host.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
-			"Unknown HashiCups API Host",
-			"The provider cannot create the HashiCups API client as there is an unknown configuration value for the HashiCups API host. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the HASHICUPS_HOST environment variable.",
+			"Unknown ScyllaDB API Host",
+			"The provider cannot create the ScyllaDB client as there is an unknown configuration value for. "+
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the SCYLLADB_HOST environment variable.",
 		)
 	}
-
-	// if data.Username.IsUnknown() {
-	// 	resp.Diagnostics.AddAttributeError(
-	// 		path.Root("username"),
-	// 		"Unknown HashiCups API Username",
-	// 		"The provider cannot create the HashiCups API client as there is an unknown configuration value for the HashiCups API username. "+
-	// 			"Either target apply the source of the value first, set the value statically in the configuration, or use the HASHICUPS_USERNAME environment variable.",
-	// 	)
-	// }
-
-	// if data.Password.IsUnknown() {
-	// 	resp.Diagnostics.AddAttributeError(
-	// 		path.Root("password"),
-	// 		"Unknown HashiCups API Password",
-	// 		"The provider cannot create the HashiCups API client as there is an unknown configuration value for the HashiCups API password. "+
-	// 			"Either target apply the source of the value first, set the value statically in the configuration, or use the HASHICUPS_PASSWORD environment variable.",
-	// 	)
-	// }
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -131,21 +115,11 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 	// Default values to environment variables, but override
 	// with Terraform configuration value if set.
 
-	host := os.Getenv("HASHICUPS_HOST")
-	username := os.Getenv("HASHICUPS_USERNAME")
-	password := os.Getenv("HASHICUPS_PASSWORD")
+	host := os.Getenv("SCYLLADB_HOST")
 
 	if !data.Host.IsNull() {
 		host = data.Host.ValueString()
 	}
-
-	// if !data.Username.IsNull() {
-	// 	username = data.Username.ValueString()
-	// }
-
-	// if !data.Password.IsNull() {
-	// 	password = data.Password.ValueString()
-	// }
 
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
@@ -153,47 +127,28 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 	if host == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
-			"Missing HashiCups API Host",
-			"The provider cannot create the HashiCups API client as there is a missing or empty value for the HashiCups API host. "+
-				"Set the host value in the configuration or use the HASHICUPS_HOST environment variable. "+
+			"Missing ScyllaDB Host",
+			"The provider cannot create the ScyllaDB client as there is a missing or empty value for the ScyllaDB host. "+
+				"Set the host value in the configuration or use the SCYLLADB_HOST environment variable. "+
 				"If either is already set, ensure the value is not empty.",
 		)
 	}
-
-	// if username == "" {
-	// 	resp.Diagnostics.AddAttributeError(
-	// 		path.Root("username"),
-	// 		"Missing HashiCups API Username",
-	// 		"The provider cannot create the HashiCups API client as there is a missing or empty value for the HashiCups API username. "+
-	// 			"Set the username value in the configuration or use the HASHICUPS_USERNAME environment variable. "+
-	// 			"If either is already set, ensure the value is not empty.",
-	// 	)
-	// }
-
-	// if password == "" {
-	// 	resp.Diagnostics.AddAttributeError(
-	// 		path.Root("password"),
-	// 		"Missing HashiCups API Password",
-	// 		"The provider cannot create the HashiCups API client as there is a missing or empty value for the HashiCups API password. "+
-	// 			"Set the password value in the configuration or use the HASHICUPS_PASSWORD environment variable. "+
-	// 			"If either is already set, ensure the value is not empty.",
-	// 	)
-	// }
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	client := scylla.NewClusterConfig([]string{host})
-	if username != "" && password != "" {
-		client.SetUserPasswordAuth(username, password)
+
+	if data.AuthLoginUserPass != nil {
+		client.SetUserPasswordAuth(data.AuthLoginUserPass.Username.ValueString(), data.AuthLoginUserPass.Password.ValueString())
 	}
 
 	err := client.CreateSession()
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Create HashiCups API Client",
-			"An unexpected error was encountered trying to create the HashiCups API client. "+
+			"Unable to Create ScyllaDB Client",
+			"An unexpected error was encountered trying to create the ScyllaDB client. "+
 				"Please verify the provider configuration values are correct and try again. "+
 				"If the problem persists, please contact HashiCorp support.\n\n"+
 				err.Error(),
@@ -206,7 +161,7 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 	resp.DataSourceData = &client
 	resp.ResourceData = &client
 
-	tflog.Info(ctx, "Configured HashiCups client", map[string]any{"success": true})
+	tflog.Info(ctx, "Configured ScyllaDB client", map[string]any{"success": true})
 }
 
 func (p *scylladbProvider) Resources(ctx context.Context) []func() resource.Resource {

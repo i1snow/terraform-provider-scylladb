@@ -8,15 +8,27 @@ terraform {
 
 provider "scylladb" {
   host = "localhost:9042"
-  port = 9042
-  # auth_login_userpass = {
-  #   username = "admin"
-  #   password = "admin_password"
+  # port = 9042
+  auth_login_userpass {
+    username = "cassandra"
+    password = "cassandra"
+  }
+  # tls_ca_cert = "ca.pem"
+  # auth_tls {
+  #   cert = 
+  #   key = 
   # }
 }
 
-data "scylladb_role" "cassandra" {}
+# resource "scyalldb_role" "admin" {
+#   id = ""
 
-# output "cassandra_role" {
-#   value = data.scylladb_role.cassandra
 # }
+
+data "scylladb_role" "cassandra" {
+  id = "cassandra"
+}
+
+output "cassandra_role" {
+  value = data.scylladb_role.cassandra
+}
