@@ -4,18 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func TestGetRoleCassandra(t *testing.T) {
-	devClusterHost := NewTestCluster(t)
-
-	cluster := NewClusterConfig([]string{devClusterHost})
-	cluster.SetSystemAuthKeyspace("system")
-	if err := cluster.CreateSession(); err != nil {
-		t.Fatalf("failed to create session: %s", err)
-	}
+	cluster := GetTestCluster(t)
 	defer cluster.Session.Close()
 
 	role, err := cluster.GetRole("cassandra")
@@ -27,15 +22,73 @@ func TestGetRoleCassandra(t *testing.T) {
 		Role:        "cassandra",
 		CanLogin:    true,
 		IsSuperuser: true,
-		MemberOf:    []string{},
+		MemberOf:    nil,
 	}
 
-	if role.Role != expectedRole.Role ||
-		role.CanLogin != expectedRole.CanLogin ||
-		role.IsSuperuser != expectedRole.IsSuperuser ||
-		!equalStringSlices(role.MemberOf, expectedRole.MemberOf) {
-		t.Fatalf("role does not match expected values. got: %+v, want: %+v", role, expectedRole)
+	assert.Equal(t, expectedRole, role)
+}
+
+func TestCreateRole(t *testing.T) {
+	cluster := GetTestCluster(t)
+	defer cluster.Session.Close()
+
+	inputRole := Role{
+		Role: "testRole",
 	}
+	expectedRole := Role{
+		Role:        "testRole",
+		IsSuperuser: false,
+		CanLogin:    false,
+		MemberOf:    nil,
+	}
+
+	err := cluster.CreateRole(inputRole)
+	if err != nil {
+		t.Fatalf("failed to create a role: %s", err)
+	}
+
+	role, err := cluster.GetRole(inputRole.Role)
+	if err != nil {
+		t.Fatalf("failed to get a role for %s: %s", inputRole.Role, err)
+	}
+
+	assert.Equal(t, expectedRole, role)
+}
+
+func TestUpdateRole(t *testing.T) {
+	cluster := GetTestCluster(t)
+	defer cluster.Session.Close()
+
+	inputRole := Role{
+		Role: "testRole",
+	}
+	updateRole := Role{
+		Role:        "testRole",
+		IsSuperuser: true,
+	}
+	expectedRole := Role{
+		Role:        "testRole",
+		IsSuperuser: true,
+		CanLogin:    false,
+		MemberOf:    nil,
+	}
+
+	err := cluster.CreateRole(inputRole)
+	if err != nil {
+		t.Fatalf("failed to create a role: %s", err)
+	}
+
+	err = cluster.UpdateRole(updateRole)
+	if err != nil {
+		t.Fatalf("failed to update a role: %s", err)
+	}
+
+	role, err := cluster.GetRole(inputRole.Role)
+	if err != nil {
+		t.Fatalf("failed to get a role for %s: %s", inputRole.Role, err)
+	}
+
+	assert.Equal(t, expectedRole, role)
 }
 
 func equalStringSlices(a, b []string) bool {
@@ -52,6 +105,17 @@ func equalStringSlices(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func GetTestCluster(t *testing.T) *Cluster {
+	devClusterHost := NewTestCluster(t)
+
+	cluster := NewClusterConfig([]string{devClusterHost})
+	cluster.SetSystemAuthKeyspace("system")
+	if err := cluster.CreateSession(); err != nil {
+		t.Fatalf("failed to create session: %s", err)
+	}
+	return &cluster
 }
 
 func NewTestCluster(t *testing.T) string {

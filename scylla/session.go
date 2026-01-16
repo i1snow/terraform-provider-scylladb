@@ -1,6 +1,6 @@
 package scylla
 
-import "github.com/gocql/gocql"
+import gocql "github.com/apache/cassandra-gocql-driver/v2"
 
 type Cluster struct {
 	Cluster                *gocql.ClusterConfig

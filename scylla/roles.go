@@ -22,3 +22,13 @@ func (c *Cluster) GetRole(roleName string) (Role, error) {
 	}
 	return role, nil
 }
+
+func (c *Cluster) CreateRole(role Role) error {
+	query := fmt.Sprintf("INSERT INTO %s.roles (role, can_login, is_superuser, member_of) VALUES (?, ?, ?, ?)", c.SystemAuthKeyspaceName)
+	return c.Session.Query(query, role.Role, role.CanLogin, role.IsSuperuser, role.MemberOf).Exec()
+}
+
+func (c *Cluster) UpdateRole(role Role) error {
+	query := fmt.Sprintf("UPDATE %s.roles SET can_login = ?, is_superuser = ?, member_of = ? WHERE role = ?", c.SystemAuthKeyspaceName)
+	return c.Session.Query(query, role.CanLogin, role.IsSuperuser, role.MemberOf, role.Role).Exec()
+}

@@ -93,6 +93,7 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	tflog.Info(ctx, "Provider configuration", map[string]interface{}{
 		"host": data.Host.ValueString(),
 		//"username": data.Username.ValueString(),
@@ -138,6 +139,10 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 		return
 	}
 
+	ctx = tflog.SetField(ctx, "scylladb_host", host)
+	tflog.Debug(ctx, "Creating scylladb client")
+
+	// Create a new scylladb client using the config
 	client := scylla.NewClusterConfig([]string{host})
 
 	if data.AuthLoginUserPass != nil {
@@ -166,7 +171,7 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 
 func (p *scylladbProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewExampleResource,
+		NewRoleResource,
 	}
 }
 

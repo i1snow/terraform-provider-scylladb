@@ -1,0 +1,239 @@
+package provider
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/i1snow/terraform-provider-scylladb/scylla"
+)
+
+// Ensure provider defined types fully satisfy framework interfaces.
+var _ resource.Resource = &roleResource{}
+var _ resource.ResourceWithConfigure = &roleResource{}
+
+func NewRoleResource() resource.Resource {
+	return &roleResource{}
+}
+
+// roleResource defines the resource implementation.
+type roleResource struct {
+	client *scylla.Cluster
+}
+
+// roleResourceeModel maps the resource source schema data.
+type roleResourceModel struct {
+	ID          types.String   `tfsdk:"id"`
+	LastUpdated types.String   `tfsdk:"last_updated"`
+	Role        types.String   `tfsdk:"role"`
+	CanLogin    types.Bool     `tfsdk:"can_login"`
+	IsSuperuser types.Bool     `tfsdk:"is_superuser"`
+	MemberOf    []types.String `tfsdk:"member_of"`
+}
+
+// Metadata returns the resource type name.
+func (r *roleResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_role"
+}
+
+// The resource uses the `Schema` method to define the supported configuration, plan, and state attribute names and types
+func (r *roleResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		// This description is used by the documentation generator and the language server.
+		MarkdownDescription: "Role resource",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Description: "The name of the role to look up.",
+				Computed:    true,
+			},
+			"last_updated": schema.StringAttribute{
+				Computed: true,
+			},
+			"role": schema.StringAttribute{
+				Required: true,
+			},
+			"can_login": schema.BoolAttribute{
+				Optional: true,
+			},
+			"is_superuser": schema.BoolAttribute{
+				Optional: true,
+			},
+			"member_of": schema.ListAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+			},
+		},
+	}
+}
+
+// Resources use the optional `Configure` method to fetch configured clients from the provider
+func (r *roleResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	client, ok := req.ProviderData.(*scylla.Cluster)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected *scylla.Cluster, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	r.client = client
+}
+
+// The provider uses the `Create` method to create a new resource based on the schemadata
+func (r *roleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	// Retrieve values from plan
+	var plan roleResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Get role from plan
+	role := scylla.Role{
+		Role:        plan.Role.ValueString(),
+		CanLogin:    plan.CanLogin.ValueBool(),
+		IsSuperuser: plan.IsSuperuser.ValueBool(),
+	}
+	if len(plan.MemberOf) > 0 {
+		role.MemberOf = []string{}
+	}
+
+	for _, member := range plan.MemberOf {
+		role.MemberOf = append(role.MemberOf, member.ValueString())
+	}
+
+	// Create a role
+	err := r.client.CreateRole(role)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create the role",
+			err.Error(),
+		)
+		return
+	}
+
+	// Populate Compuated attribute values
+	plan.ID = types.StringValue(role.Role)
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+
+	// Set state to fully populate data
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// The provider uses the `Read` method to retrieve the resource's information and update the state
+// The provider invokes this function before every plan
+func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state roleResourceModel
+
+	// Read state.
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	curRole, err := r.client.GetRole(state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to read the role",
+			err.Error(),
+		)
+		return
+	}
+
+	// Overwrite with refreshed state.
+	state = roleResourceModel{
+		ID:          types.StringValue(curRole.Role),
+		Role:        types.StringValue(curRole.Role),
+		CanLogin:    types.BoolValue(curRole.CanLogin),
+		IsSuperuser: types.BoolValue(curRole.IsSuperuser),
+	}
+	for _, member := range curRole.MemberOf {
+		state.MemberOf = append(state.MemberOf, types.StringValue(member))
+	}
+
+	// Set state.
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// The provider uses the `Update` method to update an existing resource based on the schema data
+func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	// Retrieve values from plan
+	var plan roleResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Get role from plan
+	role := scylla.Role{
+		Role:        plan.Role.ValueString(),
+		CanLogin:    plan.CanLogin.ValueBool(),
+		IsSuperuser: plan.IsSuperuser.ValueBool(),
+	}
+	if len(plan.MemberOf) > 0 {
+		role.MemberOf = []string{}
+	}
+
+	for _, member := range plan.MemberOf {
+		role.MemberOf = append(role.MemberOf, member.ValueString())
+	}
+
+	// Update the role
+	err := r.client.UpdateRole(role)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to create the role",
+			err.Error(),
+		)
+		return
+	}
+	// Populate Compuated attribute values
+	plan.ID = types.StringValue(role.Role)
+	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
+
+	// Save updated data into Terraform state
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+func (r *roleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var data ExampleResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// If applicable, this is a great opportunity to initialize any necessary
+	// provider client data and make a call using it.
+	// httpResp, err := r.client.Do(httpReq)
+	// if err != nil {
+	//     resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete example, got error: %s", err))
+	//     return
+	// }
+}
+
+func (r *roleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
