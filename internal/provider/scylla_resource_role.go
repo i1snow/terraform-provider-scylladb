@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/i1snow/terraform-provider-scylladb/scylla"
 )
@@ -49,6 +51,9 @@ func (r *roleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"id": schema.StringAttribute{
 				Description: "The name of the role to look up.",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(), // the attribute is not configurable and should not show updates from the existing state
+				},
 			},
 			"last_updated": schema.StringAttribute{
 				Computed: true,
@@ -215,23 +220,29 @@ func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 }
 
+// The provider uses the `Delete` method to attemp to retrieve the values from state and delete the resource
 func (r *roleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var data ExampleResourceModel
-
-	// Read Terraform prior state data into the model
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-
+	// Retrieve values from state
+	var state roleResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// If applicable, this is a great opportunity to initialize any necessary
-	// provider client data and make a call using it.
-	// httpResp, err := r.client.Do(httpReq)
-	// if err != nil {
-	//     resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to delete example, got error: %s", err))
-	//     return
-	// }
+	// Get the role from state
+	role := scylla.Role{
+		Role: state.Role.ValueString(),
+	}
+
+	// Delete the role
+	err := r.client.DeleteRole(role)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Unable to delete the role",
+			err.Error(),
+		)
+		return
+	}
 }
 
 func (r *roleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {

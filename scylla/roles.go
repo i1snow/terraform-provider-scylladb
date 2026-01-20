@@ -1,6 +1,8 @@
 package scylla
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Role struct {
 	Role        string
@@ -24,11 +26,16 @@ func (c *Cluster) GetRole(roleName string) (Role, error) {
 }
 
 func (c *Cluster) CreateRole(role Role) error {
-	query := fmt.Sprintf("INSERT INTO %s.roles (role, can_login, is_superuser, member_of) VALUES (?, ?, ?, ?)", c.SystemAuthKeyspaceName)
-	return c.Session.Query(query, role.Role, role.CanLogin, role.IsSuperuser, role.MemberOf).Exec()
+	query := fmt.Sprintf(`CREATE ROLE '%s' WITH LOGIN = %v AND SUPERUSER = %v`, role.Role, role.CanLogin, role.IsSuperuser)
+	return c.Session.Query(query, role.CanLogin, role.IsSuperuser).Exec()
 }
 
 func (c *Cluster) UpdateRole(role Role) error {
-	query := fmt.Sprintf("UPDATE %s.roles SET can_login = ?, is_superuser = ?, member_of = ? WHERE role = ?", c.SystemAuthKeyspaceName)
-	return c.Session.Query(query, role.CanLogin, role.IsSuperuser, role.MemberOf, role.Role).Exec()
+	query := fmt.Sprintf(`ALTER ROLE '%s' WITH LOGIN = %v AND SUPERUSER = %v`, role.Role, role.CanLogin, role.IsSuperuser)
+	return c.Session.Query(query, role.CanLogin, role.IsSuperuser).Exec()
+}
+
+func (c *Cluster) DeleteRole(role Role) error {
+	query := fmt.Sprintf(`DROP ROLE '%s'`, role.Role)
+	return c.Session.Query(query).Exec()
 }

@@ -78,7 +78,7 @@ func (d *roleDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	curRole, err := d.client.GetRole(config.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to Read the role",
+			"Unable to read the role",
 			err.Error(),
 		)
 		return
