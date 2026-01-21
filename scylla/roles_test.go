@@ -7,11 +7,24 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/i1snow/terraform-provider-scylladb/internal/testutil"
 	"github.com/stretchr/testify/assert"
 )
 
+// newTestCluster creates a Cluster connected to a test ScyllaDB container.
+func newTestCluster(t *testing.T) *Cluster {
+	host := testutil.NewTestContainer(t)
+	cluster := NewClusterConfig([]string{host})
+	cluster.SetSystemAuthKeyspace("system")
+	cluster.SetUserPasswordAuth("cassandra", "cassandra")
+	if err := cluster.CreateSession(); err != nil {
+		t.Fatalf("failed to create session: %s", err)
+	}
+	return &cluster
+}
+
 func TestGetRoleCassandra(t *testing.T) {
-	cluster := GetTestCluster(t)
+	cluster := newTestCluster(t)
 	defer cluster.Session.Close()
 
 	role, err := cluster.GetRole("cassandra")
@@ -30,7 +43,7 @@ func TestGetRoleCassandra(t *testing.T) {
 }
 
 func TestCreateRole(t *testing.T) {
-	cluster := GetTestCluster(t)
+	cluster := newTestCluster(t)
 	defer cluster.Session.Close()
 
 	inputRole := Role{
@@ -57,7 +70,7 @@ func TestCreateRole(t *testing.T) {
 }
 
 func TestUpdateRole(t *testing.T) {
-	cluster := GetTestCluster(t)
+	cluster := newTestCluster(t)
 	defer cluster.Session.Close()
 
 	inputRole := Role{
@@ -94,7 +107,7 @@ func TestUpdateRole(t *testing.T) {
 }
 
 func TestDeleteRole(t *testing.T) {
-	cluster := GetTestCluster(t)
+	cluster := newTestCluster(t)
 	defer cluster.Session.Close()
 
 	inputRole := Role{
@@ -120,19 +133,3 @@ func TestDeleteRole(t *testing.T) {
 	_, err = cluster.GetRole(inputRole.Role)
 	assert.EqualError(t, err, "not found")
 }
-
-// func equalStringSlices(a, b []string) bool {
-// 	if len(a) != len(b) {
-// 		return false
-// 	}
-// 	stringMap := make(map[string]bool)
-// 	for _, str := range a {
-// 		stringMap[str] = true
-// 	}
-// 	for _, str := range b {
-// 		if !stringMap[str] {
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }

@@ -31,7 +31,7 @@ type roleResource struct {
 	client *scylla.Cluster
 }
 
-// roleResourceeModel maps the resource source schema data.
+// roleResourceModel maps the resource source schema data.
 type roleResourceModel struct {
 	ID          types.String   `tfsdk:"id"`
 	LastUpdated types.String   `tfsdk:"last_updated"`
@@ -114,18 +114,7 @@ func (r *roleResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	// Get role from plan
-	role := scylla.Role{
-		Role:        plan.Role.ValueString(),
-		CanLogin:    plan.CanLogin.ValueBool(),
-		IsSuperuser: plan.IsSuperuser.ValueBool(),
-	}
-	if len(plan.MemberOf) > 0 {
-		role.MemberOf = []string{}
-	}
-
-	for _, member := range plan.MemberOf {
-		role.MemberOf = append(role.MemberOf, member.ValueString())
-	}
+	role := planToRole(plan)
 
 	// Create a role
 	err := r.client.CreateRole(role)
@@ -137,7 +126,7 @@ func (r *roleResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	// Populate Compuated attribute values
+	// Populate computed attribute values
 	plan.ID = types.StringValue(role.Role)
 	plan.LastUpdated = types.StringValue(time.Now().Format(time.RFC850))
 
@@ -174,6 +163,7 @@ func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		Role:        types.StringValue(curRole.Role),
 		CanLogin:    types.BoolValue(curRole.CanLogin),
 		IsSuperuser: types.BoolValue(curRole.IsSuperuser),
+		LastUpdated: types.StringValue(time.Now().Format(time.RFC850)),
 	}
 	for _, member := range curRole.MemberOf {
 		state.MemberOf = append(state.MemberOf, types.StringValue(member))
@@ -196,24 +186,13 @@ func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	// Get role from plan
-	role := scylla.Role{
-		Role:        plan.Role.ValueString(),
-		CanLogin:    plan.CanLogin.ValueBool(),
-		IsSuperuser: plan.IsSuperuser.ValueBool(),
-	}
-	if len(plan.MemberOf) > 0 {
-		role.MemberOf = []string{}
-	}
-
-	for _, member := range plan.MemberOf {
-		role.MemberOf = append(role.MemberOf, member.ValueString())
-	}
+	role := planToRole(plan)
 
 	// Update the role
 	err := r.client.UpdateRole(role)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to create the role",
+			"Unable to update the role",
 			err.Error(),
 		)
 		return
@@ -229,7 +208,7 @@ func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 }
 
-// The provider uses the `Delete` method to attemp to retrieve the values from state and delete the resource.
+// The provider uses the `Delete` method to attempt to retrieve the values from state and delete the resource.
 func (r *roleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Retrieve values from state
 	var state roleResourceModel
@@ -257,4 +236,16 @@ func (r *roleResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 // The provider users the `ImportState` method to import an existing source.
 func (r *roleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func planToRole(plan roleResourceModel) scylla.Role {
+	role := scylla.Role{
+		Role:        plan.Role.ValueString(),
+		CanLogin:    plan.CanLogin.ValueBool(),
+		IsSuperuser: plan.IsSuperuser.ValueBool(),
+	}
+	for _, member := range plan.MemberOf {
+		role.MemberOf = append(role.MemberOf, member.ValueString())
+	}
+	return role
 }

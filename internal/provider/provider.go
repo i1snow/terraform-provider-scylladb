@@ -154,7 +154,7 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 	if !data.SystemAuthKeyspace.IsNull() {
 		client.SetSystemAuthKeyspace(data.SystemAuthKeyspace.ValueString())
 	} else {
-		client.SetSystemAuthKeyspace("system")
+		client.SetSystemAuthKeyspace("system_auth")
 	}
 
 	if data.AuthLoginUserPass != nil {
@@ -166,8 +166,7 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 		resp.Diagnostics.AddError(
 			"Unable to Create ScyllaDB Client",
 			"An unexpected error was encountered trying to create the ScyllaDB client. "+
-				"Please verify the provider configuration values are correct and try again. "+
-				"If the problem persists, please contact HashiCorp support.\n\n"+
+				"Please verify the provider configuration values are correct and try again.\n\n"+
 				err.Error(),
 		)
 		return
