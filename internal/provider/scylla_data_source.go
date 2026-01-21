@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -49,16 +52,20 @@ func (d *roleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 				Required:    true,
 			},
 			"role": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The name of the role",
 			},
 			"can_login": schema.BoolAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "whether a user can login as a role",
 			},
 			"is_superuser": schema.BoolAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "whether the role is a superuser",
 			},
 			"member_of": schema.ListAttribute{
 				Computed:    true,
+				Description: "a list of members of the role",
 				ElementType: types.StringType,
 			},
 		},

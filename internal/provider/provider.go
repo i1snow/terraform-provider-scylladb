@@ -58,7 +58,7 @@ func (p *scylladbProvider) Schema(ctx context.Context, req provider.SchemaReques
 		Description: "Configure access to ScyllaDB.",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				MarkdownDescription: "Hostname or IP address of the ScyllaDB instance.",
+				MarkdownDescription: "Hostname or IP address of the ScyllaDB instance with port. e.g. localhost:9042",
 				Optional:            true,
 			},
 			"port": schema.Int64Attribute{

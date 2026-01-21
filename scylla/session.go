@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package scylla
 
 import (
@@ -104,10 +107,10 @@ func NewTestCluster(t *testing.T) string {
 	return host
 }
 
-// StdoutLogConsumer is a LogConsumer that prints the log to stdout
+// StdoutLogConsumer is a LogConsumer that prints the log to stdout.
 type StdoutLogConsumer struct{}
 
-// Accept prints the log to stdout
+// Accept prints the log to stdout.
 func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
 	fmt.Print(string(l.Content))
 }

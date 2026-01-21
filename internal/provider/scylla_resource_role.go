@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package provider
 
 import (
@@ -43,7 +46,7 @@ func (r *roleResource) Metadata(ctx context.Context, req resource.MetadataReques
 	resp.TypeName = req.ProviderTypeName + "_role"
 }
 
-// The resource uses the `Schema` method to define the supported configuration, plan, and state attribute names and types
+// The resource uses the `Schema` method to define the supported configuration, plan, and state attribute names and types.
 func (r *roleResource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server.
@@ -57,26 +60,31 @@ func (r *roleResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				},
 			},
 			"last_updated": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The time of the last time the resource was updated",
 			},
 			"role": schema.StringAttribute{
-				Required: true,
+				Description: "The name of the role",
+				Required:    true,
 			},
 			"can_login": schema.BoolAttribute{
-				Optional: true,
+				Description: "whether a user can login as a role",
+				Optional:    true,
 			},
 			"is_superuser": schema.BoolAttribute{
-				Optional: true,
+				Description: "whether the role is a superuser",
+				Optional:    true,
 			},
 			"member_of": schema.ListAttribute{
 				Optional:    true,
+				Description: "a list of members of the role",
 				ElementType: types.StringType,
 			},
 		},
 	}
 }
 
-// Resources use the optional `Configure` method to fetch configured clients from the provider
+// Resources use the optional `Configure` method to fetch configured clients from the provider.
 func (r *roleResource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -96,7 +104,7 @@ func (r *roleResource) Configure(ctx context.Context, req resource.ConfigureRequ
 	r.client = client
 }
 
-// The provider uses the `Create` method to create a new resource based on the schemadata
+// The provider uses the `Create` method to create a new resource based on the schemadata.
 func (r *roleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// Retrieve values from plan
 	var plan roleResourceModel
@@ -141,7 +149,7 @@ func (r *roleResource) Create(ctx context.Context, req resource.CreateRequest, r
 }
 
 // The provider uses the `Read` method to retrieve the resource's information and update the state
-// The provider invokes this function before every plan
+// The provider invokes this function before every plan.
 func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state roleResourceModel
 
@@ -178,7 +186,7 @@ func (r *roleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 }
 
-// The provider uses the `Update` method to update an existing resource based on the schema data
+// The provider uses the `Update` method to update an existing resource based on the schema data.
 func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	// Retrieve values from plan
 	var plan roleResourceModel
@@ -221,7 +229,7 @@ func (r *roleResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 }
 
-// The provider uses the `Delete` method to attemp to retrieve the values from state and delete the resource
+// The provider uses the `Delete` method to attemp to retrieve the values from state and delete the resource.
 func (r *roleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	// Retrieve values from state
 	var state roleResourceModel
@@ -246,7 +254,7 @@ func (r *roleResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 }
 
-// The provider users the `ImportState` method to import an existing source
+// The provider users the `ImportState` method to import an existing source.
 func (r *roleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

@@ -1,3 +1,6 @@
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
 package scylla
 
 import (
@@ -118,18 +121,18 @@ func TestDeleteRole(t *testing.T) {
 	assert.EqualError(t, err, "not found")
 }
 
-func equalStringSlices(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	stringMap := make(map[string]bool)
-	for _, str := range a {
-		stringMap[str] = true
-	}
-	for _, str := range b {
-		if !stringMap[str] {
-			return false
-		}
-	}
-	return true
-}
+// func equalStringSlices(a, b []string) bool {
+// 	if len(a) != len(b) {
+// 		return false
+// 	}
+// 	stringMap := make(map[string]bool)
+// 	for _, str := range a {
+// 		stringMap[str] = true
+// 	}
+// 	for _, str := range b {
+// 		if !stringMap[str] {
+// 			return false
+// 		}
+// 	}
+// 	return true
+// }
