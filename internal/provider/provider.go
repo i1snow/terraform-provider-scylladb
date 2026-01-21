@@ -37,9 +37,10 @@ type scylladbProvider struct {
 
 // scylladbProviderModel describes the provider data model.
 type scylladbProviderModel struct {
-	Host              types.String            `tfsdk:"host"`
-	Port              types.Int64             `tfsdk:"port"`
-	AuthLoginUserPass *authLoginUserPassModel `tfsdk:"auth_login_userpass"`
+	Host               types.String            `tfsdk:"host"`
+	Port               types.Int64             `tfsdk:"port"`
+	SystemAuthKeyspace types.String            `tfsdk:"system_auth_keyspace"`
+	AuthLoginUserPass  *authLoginUserPassModel `tfsdk:"auth_login_userpass"`
 }
 
 type authLoginUserPassModel struct {
@@ -62,6 +63,10 @@ func (p *scylladbProvider) Schema(ctx context.Context, req provider.SchemaReques
 			},
 			"port": schema.Int64Attribute{
 				MarkdownDescription: "Port number of the ScyllaDB instance.",
+				Optional:            true,
+			},
+			"system_auth_keyspace": schema.StringAttribute{
+				MarkdownDescription: "The keyspace where ScyllaDB stores authentication and authorization information. Default is `system_auth`.",
 				Optional:            true,
 			},
 		},
@@ -145,6 +150,13 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 	// Create a new scylladb client using the config
 	client := scylla.NewClusterConfig([]string{host})
 
+	// Set system auth keyspace
+	if !data.SystemAuthKeyspace.IsNull() {
+		client.SetSystemAuthKeyspace(data.SystemAuthKeyspace.ValueString())
+	} else {
+		client.SetSystemAuthKeyspace("system")
+	}
+
 	if data.AuthLoginUserPass != nil {
 		client.SetUserPasswordAuth(data.AuthLoginUserPass.Username.ValueString(), data.AuthLoginUserPass.Password.ValueString())
 	}
@@ -177,7 +189,7 @@ func (p *scylladbProvider) Resources(ctx context.Context) []func() resource.Reso
 
 func (p *scylladbProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
 	return []func() ephemeral.EphemeralResource{
-		NewExampleEphemeralResource,
+		//NewExampleEphemeralResource,
 	}
 }
 
@@ -189,13 +201,13 @@ func (p *scylladbProvider) DataSources(ctx context.Context) []func() datasource.
 
 func (p *scylladbProvider) Functions(ctx context.Context) []func() function.Function {
 	return []func() function.Function{
-		NewExampleFunction,
+		//NewExampleFunction,
 	}
 }
 
 func (p *scylladbProvider) Actions(ctx context.Context) []func() action.Action {
 	return []func() action.Action{
-		NewExampleAction,
+		//NewExampleAction,
 	}
 }
 

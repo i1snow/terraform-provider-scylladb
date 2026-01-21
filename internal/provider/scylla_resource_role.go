@@ -17,6 +17,7 @@ import (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &roleResource{}
 var _ resource.ResourceWithConfigure = &roleResource{}
+var _ resource.ResourceWithImportState = &roleResource{}
 
 func NewRoleResource() resource.Resource {
 	return &roleResource{}
@@ -245,6 +246,7 @@ func (r *roleResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 }
 
+// The provider users the `ImportState` method to import an existing source
 func (r *roleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

@@ -14,6 +14,11 @@ provider "scylladb" {
   }
 }
 
+import {
+  id = "admin"
+  to = scylladb_role.admin
+}
+
 resource "scylladb_role" "admin" {
     role = "admin"
     can_login = false
