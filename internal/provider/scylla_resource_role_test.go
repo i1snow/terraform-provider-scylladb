@@ -8,11 +8,11 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/i1snow/terraform-provider-scylladb/scylla"
+	"github.com/i1snow/terraform-provider-scylladb/internal/testutil"
 )
 
 func TestAccRoleResource(t *testing.T) {
-	devClusterHost := scylla.NewTestCluster(t)
+	devClusterHost := testutil.NewTestContainer(t)
 	providerConfig := fmt.Sprintf(providerConfigFmt, devClusterHost)
 
 	resource.Test(t, resource.TestCase{

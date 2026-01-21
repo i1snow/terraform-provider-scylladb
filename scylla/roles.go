@@ -5,6 +5,7 @@ package scylla
 
 import (
 	"fmt"
+	"unicode"
 )
 
 type Role struct {
@@ -29,16 +30,29 @@ func (c *Cluster) GetRole(roleName string) (Role, error) {
 }
 
 func (c *Cluster) CreateRole(role Role) error {
+	if err := validateRoleName(role.Role); err != nil {
+		return err
+	}
 	query := fmt.Sprintf(`CREATE ROLE '%s' WITH LOGIN = %v AND SUPERUSER = %v`, role.Role, role.CanLogin, role.IsSuperuser)
-	return c.Session.Query(query, role.CanLogin, role.IsSuperuser).Exec()
+	return c.Session.Query(query).Exec()
 }
 
 func (c *Cluster) UpdateRole(role Role) error {
 	query := fmt.Sprintf(`ALTER ROLE '%s' WITH LOGIN = %v AND SUPERUSER = %v`, role.Role, role.CanLogin, role.IsSuperuser)
-	return c.Session.Query(query, role.CanLogin, role.IsSuperuser).Exec()
+	return c.Session.Query(query).Exec()
 }
 
 func (c *Cluster) DeleteRole(role Role) error {
 	query := fmt.Sprintf(`DROP ROLE '%s'`, role.Role)
 	return c.Session.Query(query).Exec()
+}
+
+func validateRoleName(name string) error {
+	// Only allow alphanumeric and underscore
+	for _, r := range name {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' {
+			return fmt.Errorf("invalid character in role name: %c", r)
+		}
+	}
+	return nil
 }

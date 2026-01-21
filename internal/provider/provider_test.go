@@ -12,6 +12,7 @@ const (
 	providerConfigFmt = `
 provider "scylladb" {
   host = "%s"
+  system_auth_keyspace = "system"
   auth_login_userpass {
     username = "cassandra"
     password = "cassandra"

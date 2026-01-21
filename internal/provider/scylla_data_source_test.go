@@ -8,11 +8,11 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/i1snow/terraform-provider-scylladb/scylla"
+	"github.com/i1snow/terraform-provider-scylladb/internal/testutil"
 )
 
 func TestAccRoleDataSource(t *testing.T) {
-	devClusterHost := scylla.NewTestCluster(t)
+	devClusterHost := testutil.NewTestContainer(t)
 	dataConfig := fmt.Sprintf(providerConfigFmt, devClusterHost) + `
 data "scylladb_role" "cassandra" {
   id = "cassandra"
