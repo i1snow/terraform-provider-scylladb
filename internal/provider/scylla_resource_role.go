@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/i1snow/terraform-provider-scylladb/scylla"
+	"github.com/i1snow/terraform-provider-scylladb/scylladb"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -28,7 +28,7 @@ func NewRoleResource() resource.Resource {
 
 // roleResource defines the resource implementation.
 type roleResource struct {
-	client *scylla.Cluster
+	client *scylladb.Cluster
 }
 
 // roleResourceModel maps the resource source schema data.
@@ -91,11 +91,11 @@ func (r *roleResource) Configure(ctx context.Context, req resource.ConfigureRequ
 		return
 	}
 
-	client, ok := req.ProviderData.(*scylla.Cluster)
+	client, ok := req.ProviderData.(*scylladb.Cluster)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *scylla.Cluster, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *scylladb.Cluster, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
 		return
@@ -218,7 +218,7 @@ func (r *roleResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 
 	// Get the role from state
-	role := scylla.Role{
+	role := scylladb.Role{
 		Role: state.Role.ValueString(),
 	}
 
@@ -238,8 +238,8 @@ func (r *roleResource) ImportState(ctx context.Context, req resource.ImportState
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func planToRole(plan roleResourceModel) scylla.Role {
-	role := scylla.Role{
+func planToRole(plan roleResourceModel) scylladb.Role {
+	role := scylladb.Role{
 		Role:        plan.Role.ValueString(),
 		CanLogin:    plan.CanLogin.ValueBool(),
 		IsSuperuser: plan.IsSuperuser.ValueBool(),

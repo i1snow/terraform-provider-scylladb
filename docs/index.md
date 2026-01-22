@@ -28,8 +28,7 @@ provider "scylladb" {
 ### Optional
 
 - `auth_login_userpass` (Block, Optional) Login to ScyllaDB using the userpass method (see [below for nested schema](#nestedblock--auth_login_userpass))
-- `host` (String) Hostname or IP address of the ScyllaDB instance with port. e.g. localhost:9042
-- `port` (Number) Port number of the ScyllaDB instance.
+- `host` (String) Hostname or IP address of the ScyllaDB instance with a port if necessary. e.g. localhost:9042
 - `system_auth_keyspace` (String) The keyspace where ScyllaDB stores authentication and authorization information. Default is `system_auth`.
 
 <a id="nestedblock--auth_login_userpass"></a>

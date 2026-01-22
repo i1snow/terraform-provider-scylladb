@@ -1,7 +1,7 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package scylla
+package scylladb
 
 import (
 	gocql "github.com/apache/cassandra-gocql-driver/v2"

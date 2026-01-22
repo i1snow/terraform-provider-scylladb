@@ -93,4 +93,4 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
       - run: go mod download
-      - run: go test -v -cover ./scylla/
+      - run: go test -v -cover ./scylladb/
