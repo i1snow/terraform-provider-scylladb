@@ -183,6 +183,7 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 func (p *scylladbProvider) Resources(ctx context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewRoleResource,
+		NewKeyspaceResource,
 	}
 }
 
@@ -195,6 +196,7 @@ func (p *scylladbProvider) EphemeralResources(ctx context.Context) []func() ephe
 func (p *scylladbProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewRoleDataSource,
+		NewKeyspaceDataSource,
 	}
 }
 
