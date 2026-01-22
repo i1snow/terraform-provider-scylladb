@@ -18,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/i1snow/terraform-provider-scylladb/internal/consts"
-	"github.com/i1snow/terraform-provider-scylladb/scylla"
+	"github.com/i1snow/terraform-provider-scylladb/scylladb"
 )
 
 // Ensure ScylladbProvider satisfies various provider interfaces.
@@ -38,7 +38,6 @@ type scylladbProvider struct {
 // scylladbProviderModel describes the provider data model.
 type scylladbProviderModel struct {
 	Host               types.String            `tfsdk:"host"`
-	Port               types.Int64             `tfsdk:"port"`
 	SystemAuthKeyspace types.String            `tfsdk:"system_auth_keyspace"`
 	AuthLoginUserPass  *authLoginUserPassModel `tfsdk:"auth_login_userpass"`
 }
@@ -58,11 +57,7 @@ func (p *scylladbProvider) Schema(ctx context.Context, req provider.SchemaReques
 		Description: "Configure access to ScyllaDB.",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				MarkdownDescription: "Hostname or IP address of the ScyllaDB instance with port. e.g. localhost:9042",
-				Optional:            true,
-			},
-			"port": schema.Int64Attribute{
-				MarkdownDescription: "Port number of the ScyllaDB instance.",
+				MarkdownDescription: "Hostname or IP address of the ScyllaDB instance with a port if necessary. e.g. localhost:9042",
 				Optional:            true,
 			},
 			"system_auth_keyspace": schema.StringAttribute{
@@ -148,7 +143,7 @@ func (p *scylladbProvider) Configure(ctx context.Context, req provider.Configure
 	tflog.Debug(ctx, "Creating scylladb client")
 
 	// Create a new scylladb client using the config
-	client := scylla.NewClusterConfig([]string{host})
+	client := scylladb.NewClusterConfig([]string{host})
 
 	// Set system auth keyspace
 	if !data.SystemAuthKeyspace.IsNull() {

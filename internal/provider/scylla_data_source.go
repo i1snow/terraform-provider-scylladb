@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/i1snow/terraform-provider-scylladb/scylla"
+	"github.com/i1snow/terraform-provider-scylladb/scylladb"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -26,7 +26,7 @@ func NewRoleDataSource() datasource.DataSource {
 
 // roleDataSource is the data source implementation.
 type roleDataSource struct {
-	client *scylla.Cluster
+	client *scylladb.Cluster
 }
 
 // roleDataSourceModel maps the data source schema data.
@@ -117,11 +117,11 @@ func (d *roleDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 		return
 	}
 
-	client, ok := req.ProviderData.(*scylla.Cluster)
+	client, ok := req.ProviderData.(*scylladb.Cluster)
 	if !ok {
 		resp.Diagnostics.AddError(
 			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected *scylla.Cluster, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+			fmt.Sprintf("Expected *scylladb.Cluster, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
 		return
